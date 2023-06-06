@@ -316,15 +316,15 @@ class YandexImagesDownloader():
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL,
                                    params=self.get_url_params_by_page(page, keyword))
 
-        response = self.get_response()
+#         response = self.get_response()
 
-        if not (response.reason.lower() == "ok"):
-            page_result.status = "fail"
-            page_result.message = (f"Page response is not ok."
-                                   f" page: {page},",
-                                   f" status_code: {response.status_code}.")
-            page_result.errors_count = YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE
-            return page_result
+#         if not (response.reason.lower() == "ok"):
+#             page_result.status = "fail"
+#             page_result.message = (f"Page response is not ok."
+#                                    f" page: {page},",
+#                                    f" status_code: {response.status_code}.")
+#             page_result.errors_count = YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE
+#             return page_result
 
         soup_page = BeautifulSoup(self.driver.page_source, "lxml")
 
@@ -376,16 +376,16 @@ class YandexImagesDownloader():
 
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL, self.get_url_params_by_keyword(keyword))
 
-        response = self.get_response()
+#         response = self.get_response()
 
-        if not (response.reason.lower() == "ok"):
-            keyword_result = "fail"
-            keyword_result.message = (
-                "Failed to fetch a search page."
-                f" url: {YandexImagesDownloader.MAIN_URL},"
-                f" params: {{'text': {keyword}}},"
-                f" status_code: {response.status_code}")
-            return keyword_result
+#         if not (response.reason.lower() == "ok"):
+#             keyword_result = "fail"
+#             keyword_result.message = (
+#                 "Failed to fetch a search page."
+#                 f" url: {YandexImagesDownloader.MAIN_URL},"
+#                 f" params: {{'text': {keyword}}},"
+#                 f" status_code: {response.status_code}")
+#             return keyword_result
 
         soup = BeautifulSoup(self.driver.page_source, "lxml")
 
@@ -481,14 +481,20 @@ class YandexImagesDownloader():
         while True:
             soup = BeautifulSoup(self.driver.page_source, "lxml")
 
-            if not soup.select(".form__captcha"):
+            # if not soup.select(".form__captcha"):
+            #     break
+            
+            if not soup.select(".CheckboxCaptcha"):
                 break
 
-            logging.warning(f"Please, type the captcha in the browser,"
-                            " then press Enter or type [q] to exit")
-            reply = input()
-            if reply == "q":
-                raise YandexImagesDownloader.StopCaptchaInput()
+            from time import sleep
+            sleep(0.1)
 
-            del self.driver.requests
-            self.driver.get(url_with_params)
+            # logging.warning(f"Please, type the captcha in the browser,"
+            #                 " then press Enter or type [q] to exit")
+            # reply = input()
+            # if reply == "q":
+            #     raise YandexImagesDownloader.StopCaptchaInput()
+            #
+            # del self.driver.requests
+            # self.driver.get(url_with_params)
