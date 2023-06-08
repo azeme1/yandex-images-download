@@ -30,8 +30,8 @@ DRIVER_NAME_TO_CLASS = {
 
 def get_driver(name: str, path: Optional[str]) -> Driver:
     driver_class = DRIVER_NAME_TO_CLASS[name]
-    args = {'executable_path': path} if path else {}
-
+#     args = {'executable_path': path} if path else {}
+    args = {}
     return driver_class(**args)
 
 
@@ -475,7 +475,7 @@ class YandexImagesDownloader():
         url_with_params = f"{url}?{urlencode(params)}"
         self.url_with_params = url_with_params
 
-        del self.driver.requests
+        #del self.driver.requests
         self.driver.get(url_with_params)
 
         while True:
