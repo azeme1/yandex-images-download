@@ -329,12 +329,14 @@ class YandexImagesDownloader():
         soup_page = BeautifulSoup(self.driver.page_source, "lxml")
 
         # Getting all image urls from page.
-        tag_sepr_item = soup_page.find_all("div", class_="serp-item")
-        serp_items = [
-            json.loads(item.attrs["data-bem"])["serp-item"]
-            for item in tag_sepr_item
-        ]
-        img_hrefs = [key["img_href"] for key in serp_items if not (key["img_href"] in self.block_url_list)]
+        img_hrefs = []
+        for _item in soup_page.find_all('div', class_="Root_inited"):
+            data_state = json.loads(_item['data-state'])
+            if 'initialState' not in data_state:
+                continue
+            img_hrefs += [v['origUrl'] for v in data_state['initialState']['serpList']['items']['entities'].values()]
+        img_hrefs = [item for item in img_hrefs if not (item in self.block_url_list)]
+        self.block_url_list += img_hrefs
 
         errors_count = 0
         for img_url in img_hrefs:
@@ -376,29 +378,18 @@ class YandexImagesDownloader():
 
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL, self.get_url_params_by_keyword(keyword))
 
-#         response = self.get_response()
-
-#         if not (response.reason.lower() == "ok"):
-#             keyword_result = "fail"
-#             keyword_result.message = (
-#                 "Failed to fetch a search page."
-#                 f" url: {YandexImagesDownloader.MAIN_URL},"
-#                 f" params: {{'text': {keyword}}},"
-#                 f" status_code: {response.status_code}")
-#             return keyword_result
-
         soup = BeautifulSoup(self.driver.page_source, "lxml")
 
         # Getting last_page.
-        tag_serp_list = soup.find("div", class_="serp-list")
+        tag_serp_list = soup.find("div", class_="page-layout")
         if not tag_serp_list:
             keyword_result.status = "success"
             keyword_result.message = f"No images with keyword {keyword} found."
             keyword_result.errors_count = 0
             logging.info(f"    {keyword_result.message}")
             return keyword_result
-        serp_list = json.loads(tag_serp_list.attrs["data-bem"])["serp-list"]
-        last_page = serp_list["lastPage"]
+        serp_list = json.loads(tag_serp_list.attrs["data-bem"])
+        last_page = serp_list['serp-controller']['lastPage']
         actual_last_page = 1 + floor(
             self.limit / YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE)
 
