@@ -122,7 +122,6 @@ def download_single_image(img_url: str,
     }
 
     try:
-        # response = requests.get(img_url, timeout=10)
         response = requests.get(img_url, timeout=10, headers={
             'User-Agent': 'CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)'})
 
@@ -315,16 +314,6 @@ class YandexImagesDownloader():
 
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL,
                                    params=self.get_url_params_by_page(page, keyword))
-
-#         response = self.get_response()
-
-#         if not (response.reason.lower() == "ok"):
-#             page_result.status = "fail"
-#             page_result.message = (f"Page response is not ok."
-#                                    f" page: {page},",
-#                                    f" status_code: {response.status_code}.")
-#             page_result.errors_count = YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE
-#             return page_result
 
         soup_page = BeautifulSoup(self.driver.page_source, "lxml")
 
