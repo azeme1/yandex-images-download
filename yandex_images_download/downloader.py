@@ -122,6 +122,7 @@ def download_single_image(img_url: str,
     }
 
     try:
+        # response = requests.get(img_url, timeout=10)
         response = requests.get(img_url, timeout=10, headers={
             'User-Agent': 'CoolBot/0.0 (https://example.org/coolbot/; coolbot@example.org)'})
 
@@ -315,17 +316,38 @@ class YandexImagesDownloader():
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL,
                                    params=self.get_url_params_by_page(page, keyword))
 
+#         response = self.get_response()
+
+#         if not (response.reason.lower() == "ok"):
+#             page_result.status = "fail"
+#             page_result.message = (f"Page response is not ok."
+#                                    f" page: {page},",
+#                                    f" status_code: {response.status_code}.")
+#             page_result.errors_count = YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE
+#             return page_result
+
         soup_page = BeautifulSoup(self.driver.page_source, "lxml")
 
         # Getting all image urls from page.
-        img_hrefs = []
-        for _item in soup_page.find_all('div', class_="Root_inited"):
-            data_state = json.loads(_item['data-state'])
-            if 'initialState' not in data_state:
-                continue
-            img_hrefs += [v['origUrl'] for v in data_state['initialState']['serpList']['items']['entities'].values()]
-        img_hrefs = [item for item in img_hrefs if not (item in self.block_url_list)]
-        self.block_url_list += img_hrefs
+        tag_sepr_item = soup_page.find_all("div", class_="serp-controller")
+        # serp_items = [
+        #     json.loads(item.attrs["data-bem"])["serp-controller"]
+        #     for item in tag_sepr_item
+        # ]
+
+        _url_list = []
+        for item in tag_sepr_item[0].find_all('div', class_='serp-item'):
+            current_url = json.loads(item.attrs['data-bem'])['serp-item']['img_url']
+            _url_list += [current_url]
+            # print(current_url)
+            # json.loads(item.attrs['data-bem'])['serp-item']['img_url']
+            # print(data_state)
+            # if 'initialState' in data_state:
+            #     _url_list += [item['origUrl'] for item in data_state['initialState']['serpList']['items']['entities'].values()]
+
+        img_hrefs = list(set(_url_list))
+
+        # img_hrefs = [key["img_href"] for key in serp_items if not (key["img_href"] in self.block_url_list)]
 
         errors_count = 0
         for img_url in img_hrefs:
@@ -367,10 +389,21 @@ class YandexImagesDownloader():
 
         self.check_captcha_and_get(YandexImagesDownloader.MAIN_URL, self.get_url_params_by_keyword(keyword))
 
+#         response = self.get_response()
+
+#         if not (response.reason.lower() == "ok"):
+#             keyword_result = "fail"
+#             keyword_result.message = (
+#                 "Failed to fetch a search page."
+#                 f" url: {YandexImagesDownloader.MAIN_URL},"
+#                 f" params: {{'text': {keyword}}},"
+#                 f" status_code: {response.status_code}")
+#             return keyword_result
+
         soup = BeautifulSoup(self.driver.page_source, "lxml")
 
         # Getting last_page.
-        tag_serp_list = soup.find("div", class_="page-layout")
+        tag_serp_list = soup.find("div", class_="serp-list")
         if not tag_serp_list:
             keyword_result.status = "success"
             keyword_result.message = f"No images with keyword {keyword} found."
@@ -378,7 +411,7 @@ class YandexImagesDownloader():
             logging.info(f"    {keyword_result.message}")
             return keyword_result
         serp_list = json.loads(tag_serp_list.attrs["data-bem"])
-        last_page = serp_list['serp-controller']['lastPage']
+        last_page = serp_list.get("serp-list", {}).get("lastPage", 0)
         actual_last_page = 1 + floor(
             self.limit / YandexImagesDownloader.MAXIMUM_IMAGES_PER_PAGE)
 
@@ -421,11 +454,11 @@ class YandexImagesDownloader():
         return subdirectory
 
     def download_images(self, keywords: List[str]) -> DownloaderResult:
-        dowloader_result = DownloaderResult(status=None,
+        downloader_result = DownloaderResult(status=None,
                                             message=None,
                                             keyword_results=[])
 
-        dowloader_result.status = "fail"
+        downloader_result.status = "fail"
 
         for keyword in keywords:
             if keyword in self.block_keyword_list:
@@ -436,14 +469,14 @@ class YandexImagesDownloader():
 
             keyword_result = self.download_images_by_keyword(
                 keyword, sub_directory=self.get_subdirectory(keyword))
-            dowloader_result.keyword_results.append(keyword_result)
+            downloader_result.keyword_results.append(keyword_result)
 
             logging.info(keyword_result.message)
 
-        dowloader_result.status = "success"
-        dowloader_result.message = "Everything is downloaded!"
+        downloader_result.status = "success"
+        downloader_result.message = "Everything is downloaded!"
 
-        return dowloader_result
+        return downloader_result
 
     class StopCaptchaInput(Exception):
         pass
